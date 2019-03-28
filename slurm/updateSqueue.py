@@ -2,19 +2,24 @@
 # encoding: utf-8
 
 """
-Copyright (c) 2014
+Copyright (c) 2019
 Harvard FAS Research Computing
 All rights reserved.
-Created on Oct 21, 2014
+Created on Oct 21, 2019
 
 @author: Aaron Kitzmiller
 """
+from __future__ import print_function
 
 import os, select, subprocess, socket, logging
 import sys, time
 from datetime import datetime
 import MySQLdb
 
+logging.basicConfig(
+    format='%(asctime)s %(message)s',
+    level=logging.getLevelName(os.environ.get('UPDATE_SQUEUE_LOGLEVEL', 'INFO'))
+)
 logger = logging.getLogger()
 
 # sleep interval between squeue executions
@@ -74,6 +79,7 @@ SQUEUE_FIELDS = {
 }
 orderedkeys = sorted(SQUEUE_FIELDS.keys())
 formatstring = ":::".join(orderedkeys)
+print(formatstring)
 
 SQL_DSN = {
     "host"      : os.environ.get("SQUEUE_HOST","db-internal"),
@@ -97,7 +103,13 @@ INTEGER_FIELDS = [
     "min_cpus",
 ]
 
-def main(self):
+def main(once=False):
+    '''
+    main loop
+
+    If once is True, will execute one time and then break.
+
+    '''
     failcount = 0
 
     connection = None
@@ -105,7 +117,7 @@ def main(self):
     while connection is None and connection_attempts < MAX_ATTEMPTS:
         try:
             connection = MySQLdb.connect(**SQL_DSN)
-        except Exception, e:
+        except Exception as e:
             time.sleep(CONNECTION_WAIT)
             connection_attempts += 1
     connection.autocommit = False
@@ -121,8 +133,6 @@ def main(self):
     squeueq_id = int(row[0])
 
     while True:
-        time.sleep(sleepytime)
-
         # Run the squeue command
         squeuecmd = "%s --format='%s' -h" % (SQUEUE_COMMAND, formatstring)
         p = subprocess.Popen(
@@ -168,7 +178,7 @@ def main(self):
                             v = 0
                         sr[field] = v
                     squeueresults.append(sr)
-                except Exception, e:
+                except Exception as e:
                     logger.info("The following line failed to parse %s\n%s" % (line,str(e)))
             #
             # Delete existing results and insert new ones
@@ -267,6 +277,10 @@ def main(self):
             cursor.execute("update jobs_squeueq set lastupdate = %s where id = %s",[datetime.now().strftime('%Y-%m-%d %H:%M:%S'), squeueq_id])
             connection.commit()
             failcount = 0
+        if once:
+            break
+        time.sleep(sleepytime)
 
-if __file__.__name__ == "__main__":
+
+if __name__ == "__main__":
     sys.exit(main())
