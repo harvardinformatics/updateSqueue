@@ -165,7 +165,7 @@ def main(once=False):
         else:
             logger.debug('Squeue results found')
             squeueresults = []
-            lines = stdout.strip().split("\n")
+            lines = stdout.decode('utf8').strip().split("\n")
             for line in lines:
                 if line.startswith('EXEC_HOST:::'):
                     continue
