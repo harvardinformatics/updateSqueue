@@ -40,7 +40,7 @@ class TestUpdateSqueue(unittest.TestCase):
 
     def testUpdateSqueuel(self):
         '''
-        Can we update the squeue table?
+        Update squeue table with test results.  Verify total row count and several fields from a row
         '''
         updateSqueue.main(once=True)
         connection = MySQLdb.connect(**SQL_DSN)
@@ -49,4 +49,12 @@ class TestUpdateSqueue(unittest.TestCase):
         row = cursor.fetchone()
 
         self.assertTrue(row[0] == 33466, 'Incorrect number of squeue results %d' % row[0])
+
+        cursor.execute('select * from jobs_squeueresults where jobid = %s',['4747730_943'])
+        desc = cursor.description
+        result = [ dict(zip([col[0] for col in desc], row)) for row in cursor.fetchall()][0]
+        self.assertTrue(result['account'] == 'coull_lab')
+        self.assertTrue(result['work_dir'] == '/n/scratchlfs/coull_lab/jlee/Project_Viva/2_SparseCCA_Power/Scripts/Dir_SparseCCA_Power_n400/Scenario_2')
+        self.assertTrue(result['submit_time'] == '2019-03-26T02:39:25')
+        self.assertTrue(result['licenses'] == '(null)')
 

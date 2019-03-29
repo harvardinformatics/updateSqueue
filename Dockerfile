@@ -10,11 +10,12 @@ RUN apt-get update -y && apt-get install -y \
     python \
     python-mysqldb \
     python-nose \
+    python-setuptools \
     supervisor
 
 COPY etc/supervisor.conf /etc/supervisor/conf.d/app.conf
 
 WORKDIR /app
 ADD . /app
-
+RUN python setup.py install
 CMD ["/usr/bin/supervisord","-n"]
