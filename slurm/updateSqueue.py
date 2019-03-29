@@ -82,10 +82,10 @@ formatstring = ":::".join(orderedkeys)
 print(formatstring)
 
 SQL_DSN = {
-    "host"      : os.environ.get("SQUEUE_HOST","db-internal"),
-    "db"        : os.environ.get("SQUEUE_DB","portal"),
-    "user"      : os.environ.get("SQUEUE_USER","squeuedb"),
-    "passwd"    : os.environ.get("SQUEUE_PASSWD","squeuedb"),
+    "host"      : os.environ.get("SQUEUE_HOSTNAME","db-internal"),
+    "db"        : os.environ.get("SQUEUE_DATABASE","portal"),
+    "user"      : os.environ.get("SQUEUE_USERNAME","squeuedb"),
+    "passwd"    : os.environ.get("SQUEUE_PASSWORD","squeuedb"),
 }
 
 SQUEUE_COMMAND = os.environ.get('SQUEUE_COMMAND', '/usr/bin/squeue')
@@ -120,13 +120,14 @@ def main(once=False):
         except Exception as e:
             time.sleep(CONNECTION_WAIT)
             connection_attempts += 1
+
+    if connection is None:
+        raise Exception('Cannot connect to database after %d attempts' % MAX_ATTEMPTS)
+
     connection.autocommit = False
 
-    squeueq_sql = '''
-        select id from jobs_squeueq limit 1
-    '''
     cursor = connection.cursor()
-    cursor.execute(sql,[user,partitionre,jobsre,statesre])
+    cursor.execute('select id from jobs_squeueq limit 1')
     row = cursor.fetchone()
     cursor.close()
 
@@ -146,17 +147,14 @@ def main(once=False):
         # If it's successful process the pipe-separated lines
         if p.returncode != 0:
             failcount += 1
-            logger.info("squeue command %s has failed.\n%s" % (squeuecmd,stderr))
+            logger.error("squeue command %s has failed.\n%s" % (squeuecmd,stderr))
         elif stdout == "":
             logger.info("No jobs in the queue\n")
 
             # If there are no results, delete any that are there
             # and update the SqueueQ
-            sql = '''
-                delete from jobs_squeueresults
-            '''
             cursor = connection.cursor()
-            cursor.execute(sql)
+            cursor.execute('delete from jobs_squeueresults')
             sql = '''
                 update jobs_squeueq set lastupdate = %s where id = %s
             '''
@@ -165,21 +163,38 @@ def main(once=False):
 
             failcount = 0
         else:
+            logger.debug('Squeue results found')
             squeueresults = []
             lines = stdout.strip().split("\n")
             for line in lines:
+                if line.startswith('EXEC_HOST:::'):
+                    continue
                 try:
                     sr = {}
                     values = line.strip().split(":::")
                     for i,key in enumerate(orderedkeys):
                         field = SQUEUE_FIELDS[key]
                         v = values[i].strip()
-                        if (v == "(null)" or v == "N/A") and field in INTEGER_FIELDS:
-                            v = 0
+                        if field == 'command':
+                            v = v[-255:]
+                        if field == 'reason':
+                            v = v[:50]
+                        if field == 'array_task_id':
+                            v = v[:50]
+                        if field == 'nodelistreason':
+                            v = v[:2000]
+                        if field == 'workdir':
+                            v = v[:2000]
+                        if field in INTEGER_FIELDS:
+                            if (v == "(null)" or v == "N/A"):
+                                v = "0"
+                            v = int(v)
                         sr[field] = v
                     squeueresults.append(sr)
                 except Exception as e:
                     logger.info("The following line failed to parse %s\n%s" % (line,str(e)))
+
+            logger.debug('%d squeue result lines', len(squeueresults))
             #
             # Delete existing results and insert new ones
             # in a single transaction
@@ -188,96 +203,24 @@ def main(once=False):
             cursor.execute("delete from jobs_squeueresults")
             sql = '''
                 insert into jobs_squeueresults (
-                    squeueq_id,
-                    account,
-                    gres,
-                    min_cpus,
-                    min_tmp_disk,
-                    end_time,
-                    features,
-                    group,
-                    shared,
-                    jobid,
-                    name,
-                    comment,
-                    timelimit,
-                    min_memory,
-                    req_nodes,
-                    command,
-                    priority,
-                    qos,
-                    reason,
-                    user,
-                    reservation,
-                    nice,
-                    exec_host,
-                    cpus,
-                    nodes,
-                    dependency,
-                    array_job_id,
-                    array_task_id,
-                    time_left,
-                    time,
-                    node_list,
-                    contiguous,
-                    partition,
-                    nodelistreason,
-                    start_time,
-                    state,
-                    user,
-                    submit_time,
-                    licenses,
-                    work_dir
+                    `squeueq_id`, `exec_host`,`cpus`,`nodes`,`dependency`,`array_job_id`,`array_task_id`,`time_left`,`time`,`node_list`,`contiguous`,`partition`,`priority`,`nodelistreason`,`start_time`,`state`,`submit_time`,`licenses`,`work_dir`,`account`,`gres`,`min_cpus`,`min_tmp_disk`,`end_time`,`features`,`group`,`shared`,`jobid`,`name`,`comment`,`timelimit`,`min_memory`,`req_nodes`,`command`,`qos`,`reason`,`user`,`reservation`,`nice`, `exc_nodes`
                 ) values (
-                    %(squeueq_id)i,
-                    %(account)s,
-                    %(gres)s,
-                    %(min_cpus)i,
-                    %(min_tmp_disk)s,
-                    %(end_time)s,
-                    %(features)s,
-                    %(group)s,
-                    %(shared)s,
-                    %(jobid)s,
-                    %(name)s,
-                    %(comment)s,
-                    %(timelimit)s,
-                    %(min_memory)s,
-                    %(req_nodes)s,
-                    %(command)s,
-                    %(priority)s,
-                    %(qos)s,
-                    %(reason)s,
-                    %(user)s,
-                    %(reservation)s,
-                    %(nice)i,
-                    %(exec_host)s,
-                    %(cpus)i,
-                    %(nodes)i,
-                    %(dependency)s,
-                    %(array_job_id)i,
-                    %(array_task_id)s,
-                    %(time_left)s,
-                    %(time)s,
-                    %(node_list)s,
-                    %(contiguous)i,
-                    %(partition)s,
-                    %(nodelistreason)s,
-                    %(start_time)s,
-                    %(state)s,
-                    %(user)s,
-                    %(submit_time)s,
-                    %(licenses)s,
-                    %(work_dir)s
+                    %s,            %s,        %s,     %s,         %s,            %s,         %s,           %s,         %s,      %s,       %s,           %s,         %s,          %s,           %s,          %s,       %s,         %s,       %s,      %s,         %s,     %s,          %s,         %s,      %s,           %s,      %s,   %s,      %s,      %s,          %s,           %s,         %s,      %s,  %s,       %s,  %s,         %s,       %s,    'null'
                 )
             '''
             for sr in squeueresults:
-                cursor.execute(sql,sr)
+                try:
+                    ks = [squeueq_id] + [sr[SQUEUE_FIELDS[k]] for k in orderedkeys if not k == '%U']
+                    cursor.execute(sql,ks)
+                except Exception as e:
+                    logger.error('Unable to store squeue line: %s\n%s' % (str(e), repr(ks)))
+
 
             cursor.execute("update jobs_squeueq set lastupdate = %s where id = %s",[datetime.now().strftime('%Y-%m-%d %H:%M:%S'), squeueq_id])
             connection.commit()
             failcount = 0
         if once:
+            logger.debug('Only doing this once.')
             break
         time.sleep(sleepytime)
 
