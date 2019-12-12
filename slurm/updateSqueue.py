@@ -30,8 +30,8 @@ MAX_FAIL_COUNT = 5
 
 # Error email details
 SMTP_HOST = os.environ.get("SQUEUE_SMTP_HOST","rcsmtp.rc.fas.harvard.edu")
-FROM_ADDR = "root@sa01.rc.fas.harvard.edu"
-TO_ADDRS = ["akitzmiller@g.harvard.edu"]
+FROM_ADDR = "ifx@fas.harvard.edu"
+TO_ADDRS = ["ifx@fas.harvard.edu"]
 
 #
 # List of fields as they appear in the squeue --format %all output
