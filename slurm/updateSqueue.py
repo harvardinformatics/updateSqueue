@@ -82,10 +82,10 @@ formatstring = ":::".join(orderedkeys)
 print(formatstring)
 
 SQL_DSN = {
-    "host"      : os.environ.get("SQUEUE_HOSTNAME","db-internal"),
-    "db"        : os.environ.get("SQUEUE_DATABASE","portal"),
-    "user"      : os.environ.get("SQUEUE_USERNAME","squeuedb"),
-    "passwd"    : os.environ.get("SQUEUE_PASSWORD","squeuedb"),
+    "host"      : os.environ.get("UPDATE_SQUEUE_HOSTNAME","db-internal"),
+    "db"        : os.environ.get("UPDATE_SQUEUE_DATABASE","portal"),
+    "user"      : os.environ.get("UPDATE_SQUEUE_USERNAME","squeuedb"),
+    "passwd"    : os.environ.get("UPDATE_SQUEUE_PASSWORD","squeuedb"),
 }
 
 SQUEUE_COMMAND = os.environ.get('SQUEUE_COMMAND', '/usr/bin/squeue')
