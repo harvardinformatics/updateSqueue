@@ -11,7 +11,9 @@ RUN apt-get update -y && apt-get install -y \
     python-mysqldb \
     python-nose \
     python-setuptools \
-    supervisor
+    supervisor \
+    sssd \
+    sssd-tools
 
 COPY etc/supervisor.conf /etc/supervisor/conf.d/app.conf
 
