@@ -16,10 +16,10 @@ from slurm import updateSqueue
 
 os.environ['SQUEUE_COMMAND'] = os.path.join(os.path.dirname(__file__), 'squeue')
 SQL_DSN = {
-    "host"      : os.environ.get("SQUEUE_HOSTNAME","db-internal"),
-    "db"        : os.environ.get("SQUEUE_DATABASE","portal"),
-    "user"      : os.environ.get("SQUEUE_USERNAME","squeuedb"),
-    "passwd"    : os.environ.get("SQUEUE_PASSWORD","squeuedb"),
+    "host"      : os.environ.get("UPDATE_SQUEUE_HOSTNAME","db-internal"),
+    "db"        : os.environ.get("UPDATE_SQUEUE_DATABASE","portal"),
+    "user"      : os.environ.get("UPDATE_SQUEUE_USERNAME","squeuedb"),
+    "passwd"    : os.environ.get("UPDATE_SQUEUE_PASSWORD","squeuedb"),
 }
 
 

@@ -5,6 +5,7 @@ services:
     image: mariadb
     volumes:
       - squeue-data:/var/lib/mysql
+      - ./etc/portal-no-data.sql:/docker-entrypoint-initdb.d/1.sql
     environment:
       - MYSQL_ROOT_PASSWORD=squeue
       - MYSQL_DATABASE=squeue
@@ -15,16 +16,17 @@ services:
     volumes:
       - .:/app
     environment:
-      - SQUEUE_USERNAME=squeue
-      - SQUEUE_PASSWORD=squeue
-      - SQUEUE_HOSTNAME=squeue-db
-      - SQUEUE_DATABASE=squeue
+      - UPDATE_SQUEUE_USERNAME=squeue
+      - UPDATE_SQUEUE_PASSWORD=squeue
+      - UPDATE_SQUEUE_HOSTNAME=squeue-db
+      - UPDATE_SQUEUE_DATABASE=squeue
       - UPDATE_SQUEUE_LOGLEVEL=DEBUG
       - SQUEUE_COMMAND=/app/test/squeue
     links:
       - squeue-db
     depends_on:
       - squeue-db
+    command: 'python setup.py test'
 
 volumes:
   squeue-data:

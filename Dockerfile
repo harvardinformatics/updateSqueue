@@ -1,11 +1,11 @@
-FROM debian
+FROM debian:buster
 
 # Intended to be used for testing purposes, linked to a database called squeue-db
 
 EXPOSE 80
 RUN apt-get update -y && apt-get install -y \
     procps \
-    mariadb-client-10.1 \
+    mariadb-client-10.3 \
     libmariadbclient-dev-compat \
     python \
     python-mysqldb \
