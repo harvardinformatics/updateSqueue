@@ -165,11 +165,12 @@ def main(once=False):
         else:
             logger.debug('Squeue results found')
             squeueresults = []
-            lines = stdout.decode('utf8').strip().split("\n")
+            lines = stdout.strip().split("\n")
             for line in lines:
-                if line.startswith('EXEC_HOST:::'):
-                    continue
                 try:
+                    line = line.decode('utf8')
+                    if line.startswith('EXEC_HOST:::'):
+                        continue
                     sr = {}
                     values = line.strip().split(":::")
                     for i,key in enumerate(orderedkeys):
